@@ -1,7 +1,7 @@
 -- ==========================================
--- 🎀 Hello Kitty Roof-Scan Hub 🎀
--- ✨ Created by Lulu ✨
--- Optimized for Delta (GitHub Edition)
+-- Hello Kitty Roof-Scan Hub
+-- Created by Lulu
+-- Optimized for Delta (Fixed English Version)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -10,35 +10,42 @@ local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
-local angle = 0
+local Angle = 0
 local CalculatedRoofHeight = 350
 
-if getgenv().LuluAntiAfk then getgenv().LuluAntiAfk:Disconnect() end
+-- 1. Anti-AFK Connection
+if getgenv().LuluAntiAfk then 
+    getgenv().LuluAntiAfk:Disconnect() 
+end
+
 getgenv().LuluAntiAfk = LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
 
-local _G.AutoFarm = false
-local _G.ResetOnFull = false
-local _G.AntiAfkWalk = false
+-- Global Toggles
+_G.AutoFarm = false
+_G.ResetOnFull = false
+_G.AntiAfkWalk = false
 local MaxCoins = 40
 
+-- Smart Map Roof Scanner
 local function ScanForRoofHeight()
-    local currentMap = Workspace:FindFirstChild("Normal") or Workspace:FindFirstChild("Map")
-    if currentMap then
-        local highestY = 0
-        for _, obj in pairs(currentMap:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position.Y > highestY and obj.Position.Y < 600 then
-                highestY = obj.Position.Y
+    local CurrentMap = Workspace:FindFirstChild("Normal") or Workspace:FindFirstChild("Map")
+    if CurrentMap then
+        local HighestY = 0
+        for _, Obj in pairs(CurrentMap:GetDescendants()) do
+            if Obj:IsA("BasePart") and Obj.Position.Y > HighestY and Obj.Position.Y < 600 then
+                HighestY = Obj.Position.Y
             end
         end
-        if highestY > 0 then
-            CalculatedRoofHeight = highestY + 15
+        if HighestY > 0 then
+            CalculatedRoofHeight = HighestY + 15
         end
     end
 end
 
+-- 2. GUI Creation (Delta Compatible via PlayerGui)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HelloKittyHub"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -86,18 +93,18 @@ Credits.Text = "🐾 by Lulu 🐾"
 Credits.TextColor3 = Color3.fromRGB(255, 20, 147)
 Credits.TextSize = 14
 
-local function CreateButton(text, posy, callback)
+local function CreateButton(ButtonText, PosY, Callback)
     local Button = Instance.new("TextButton")
     local ButtonCorner = Instance.new("UICorner")
     local StateLabel = Instance.new("TextLabel")
-    local enabled = false
+    local Enabled = false
 
     Button.Parent = MainPanel
     Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Position = UDim2.new(0.05, 0, posy, 0)
+    Button.Position = UDim2.new(0.05, 0, PosY, 0)
     Button.Size = UDim2.new(0.9, 0, 0, 40)
     Button.Font = Enum.Font.GothamBold
-    Button.Text = text
+    Button.Text = ButtonText
     Button.TextColor3 = Color3.fromRGB(255, 105, 180)
     Button.TextSize = 14
 
@@ -114,55 +121,66 @@ local function CreateButton(text, posy, callback)
     StateLabel.TextSize = 14
 
     Button.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        StateLabel.Text = enabled and "✅" or "❌"
-        StateLabel.TextColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        callback(enabled)
+        Enabled = not Enabled
+        StateLabel.Text = Enabled and "✅" or "❌"
+        StateLabel.TextColor3 = Enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        Callback(Enabled)
     end)
 end
 
-CreateButton("Auto-Coin Teleport", 0.2, function(val) _G.AutoFarm = val end)
-CreateButton("Reset on Full Bag", 0.4, function(val) _G.ResetOnFull = val end)
-CreateButton("Anti-AFK Circle Walk", 0.6, function(val) _G.AntiAfkWalk = val end)
+-- Create Menu Buttons with Hungarian Labels for you
+CreateButton("Auto-Coin Teleport", 0.2, function(Value) _G.AutoFarm = Value end)
+CreateButton("Reset ha megtelt", 0.4, function(Value) _G.ResetOnFull = Value end)
+CreateButton("Anti-AFK Sétálás", 0.6, function(Value) _G.AntiAfkWalk = Value end)
 
+-- 3. Core Loop (Coin & Event Item Farming)
 task.spawn(function()
     while true do
         task.wait(0.1)
         if _G.AutoFarm then
-            local char = LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            local humanoid = char and char:FindFirstChild("Humanoid")
+            local Character = LocalPlayer.Character
+            local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+            local Humanoid = Character and Character:FindFirstChild("Humanoid")
             
             ScanForRoofHeight()
 
-            local coinData = LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Coins")
-            if _G.ResetOnFull and coinData and coinData.Value >= MaxCoins and humanoid and humanoid.Health > 0 then
-                humanoid:BreakJoints()
-                task.wait(5)
+            -- MM2 Coin Bag Check
+            local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            local MainGui = PlayerGui and PlayerGui:FindFirstChild("MainGui")
+            local GameFrame = MainGui and MainGui:FindFirstChild("Game")
+            local CoinBagLabel = GameFrame and GameFrame:FindFirstChild("CoinBag")
+            
+            if _G.ResetOnFull and Humanoid and Humanoid.Health > 0 and CoinBagLabel then
+                -- Safely parse container capacity text (e.g., "40/40")
+                local CurrentCoins = string.match(CoinBagLabel.Text, "^(%d+)")
+                if CurrentCoins and tonumber(CurrentCoins) >= MaxCoins then
+                    Humanoid:BreakJoints()
+                    task.wait(5)
+                end
             end
 
-            if root and humanoid and humanoid.Health > 0 then
-                local targetCoin = nil
+            if RootPart and Humanoid and Humanoid.Health > 0 then
+                local TargetCoin = nil
                 
-                for _, obj in pairs(Workspace:GetDescendants()) do
-                    if obj.Name == "CoinContainer" or obj.Name == "Coin" or obj.Name == "Candy" or obj.Name == "SnowToken" or obj.Name == "Token" or obj.Name == "Diamond" then
-                        if obj:IsA("BasePart") then
-                            targetCoin = obj
+                for _, Obj in pairs(Workspace:GetDescendants()) do
+                    if Obj.Name == "CoinContainer" or Obj.Name == "Coin" or Obj.Name == "Candy" or Obj.Name == "SnowToken" or Obj.Name == "Token" or Obj.Name == "Diamond" then
+                        if Obj:IsA("BasePart") then
+                            TargetCoin = Obj
                             break
                         end
                     end
                 end
 
-                if targetCoin then
-                    local originalX = root.Position.X
-                    local originalZ = root.Position.Z
+                if TargetCoin then
+                    local OriginalX = RootPart.Position.X
+                    local OriginalZ = RootPart.Position.Z
                     
-                    root.CFrame = targetCoin.CFrame
+                    RootPart.CFrame = TargetCoin.CFrame
                     task.wait(0.12)
-                    root.CFrame = CFrame.new(originalX, CalculatedRoofHeight, originalZ)
+                    RootPart.CFrame = CFrame.new(OriginalX, CalculatedRoofHeight, originalZ)
                 else
-                    if root.Position.Y < (CalculatedRoofHeight - 5) or root.Position.Y > (CalculatedRoofHeight + 5) then
-                        root.CFrame = CFrame.new(root.Position.X, CalculatedRoofHeight, root.Position.Z)
+                    if RootPart.Position.Y < (CalculatedRoofHeight - 5) or RootPart.Position.Y > (CalculatedRoofHeight + 5) then
+                        RootPart.CFrame = CFrame.new(RootPart.Position.X, CalculatedRoofHeight, RootPart.Position.Z)
                     end
                 end
             end
@@ -170,20 +188,22 @@ task.spawn(function()
     end
 end)
 
-RunService.RenderStepped:Connect(function(deltaTime)
+-- 4. Safe Walk Loop
+RunService.RenderStepped:Connect(function(DeltaTime)
     if _G.AntiAfkWalk and not _G.AutoFarm then
-        local character = LocalPlayer.Character
-        local humanoid = character and character:FindFirstChild("Humanoid")
-        if humanoid then
-            angle = angle + (2 * deltaTime)
-            local moveDirection = Vector3.new(math.sin(angle) * 6, 0, math.cos(angle) * 6)
-            humanoid:Move(moveDirection, false)
+        local Character = LocalPlayer.Character
+        local Humanoid = Character and Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Angle = Angle + (2 * DeltaTime)
+            local MoveDirection = Vector3.new(math.sin(Angle) * 6, 0, math.cos(Angle) * 6)
+            Humanoid:Move(MoveDirection, false)
         end
     end
 end)
 
+-- Success Notification
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Hello Kitty Hub 🎀",
-    Text = "GitHub Szkript sikeresen elindult! by Lulu",
+    Text = "GitHub Script Loaded! by Lulu",
     Duration = 5
 })
